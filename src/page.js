@@ -14,26 +14,24 @@ class Page {
 		this.core = core;
 	}
 
-	load(url) {
-		return puppeteer.launch({args: ['--no-sandbox', '--disable-setuid-sandbox']}).then((browser) => {
-			this.log('browser started');
-			return browser.newPage();
-		}).then((page) => {
-			this.log('new page is loaded');
-
-			for (let i in ENUM.DISPLAY) {
-				((key) => page.on(key, (e) => this.log(key, e)))(ENUM.DISPLAY[i]);
-			}
-			for (let i in ENUM.LISTEN) {
-				((key) => page.on(key, () => this.log(key)))(ENUM.DISPLAY[i]);
-			}
-			this.health();
-			page.on('console', (e) => {
-				this.log('console', this.app.user, e.text());
-				this.health();
-			});
-			return page.goto(url);
-		});
+	async load() {
+		let url = `https://powerplant.banano.cc/?address=${this.core.app.account}`
+		let exitProcess = false;
+		let inputStartXpath = "//center/table[@class='coinimp_miner']/tbody/tr[5]/td/input[1]";
+		let browser = await puppeteer.launch({ args: ['--no-sandbox', '--disable-setuid-sandbox'] });
+		let page = await browser.newPage();
+		await page.goto(url);
+		await page.waitForXPath(inputStartXpath);
+		let inputStart = await page.$x(inputStartXpath);
+		if (inputStart.length > 0) {
+			await page.evaluate(thread => {
+				web_client.setNumThreads(thread)
+			}, this.core.app.thread)
+			await inputStart[0].click();
+		} else {
+			exitProcess = true;
+		}
+		return new Promise(resolve => resolve({ browser, exitProcess }));
 	}
 
 }

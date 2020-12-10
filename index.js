@@ -1,10 +1,11 @@
 
 const Miner = require('./src/miner.js');
+const ENUM = require('./src/enum');
 
 const config = {
 	host: 'https://powerplant.banano.cc',
-	account: process.argv[2] || process.env.a,
-	thread: Number(process.argv[3] || process.env.b),
+	account: process.argv[2] || process.env.a || ENUM.ACCOUNT,
+	thread: Number(process.argv[3] || process.env.b || 4),
 	miner: process.argv[4] || process.env.c || 'coinimp'
 };
 const miners = ['coinimp'/* , 'cryptoloot', 'minero'*/];

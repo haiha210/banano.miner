@@ -8,7 +8,6 @@ class Miner extends require('events') {
 	constructor(config) {
 		super();
 		this.api = new Api(config.host);
-		this.page = new Page(this);
 		this.config = config;
 		this.app = {
 			miner: config.miner || 'coinimp',
@@ -16,12 +15,16 @@ class Miner extends require('events') {
 			user: null,
 			thread: config.thread || 2
 		};
+		this.page = new Page(this);
 	}
 
 	health() {
 		clearTimeout(this._close);
 		this._close = setTimeout(() => {
 			this.log(new Error('not logs from workers in to long'));
+			if (this.brower) {
+				this.brower.close()
+			}
 			process.exit(1);
 		}, 1000 * 60);
 	}
@@ -57,10 +60,16 @@ class Miner extends require('events') {
 				throw new Error('invalid user account');
 			}
 			this.log('start', this.app);
-			return this.page.load(`https://anzerr.github.io/${this.app.miner}/index.html?thread=${this.app.thread}?user=${this.app.user}`);
-		}).then(() => {
+
+			return this.page.load(this.app)
+		}).then(result => {
 			this.log('on the miner page');
 			this.log('config', this.app);
+			this.brower = result.brower;
+			if(result.exitProcess) {
+				this._close();
+				return;
+			}
 			return this.check();
 		});
 	}
